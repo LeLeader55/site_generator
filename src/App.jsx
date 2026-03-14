@@ -381,52 +381,214 @@ function HomePage() {
     </>
   );
 }
+
 function CityPage() {
   const { serviceSlug, departmentCode, citySlug } = useParams();
   const city = getCity(serviceSlug, departmentCode, citySlug);
 
   if (!city) return <Navigate to="/" replace />;
 
+  const faqSection = city.faqSection || null;
+  const trustSection = city.trustSection || null;
+
+  const telHref = `tel:${city.phone.replace(/\s+/g, "")}`;
+  const serviceNameLower = city.serviceName?.toLowerCase?.() || "service";
+
+  const siblingCities = cities.filter(
+    (item) =>
+      item.departmentCode === city.departmentCode &&
+      item.serviceSlug === city.serviceSlug &&
+      item.slug !== city.slug
+  );
+
+  const heroBadge = city.heroBadge || "Entreprise locale";
+
+  const miniStats =
+    city.miniStats || [
+      { label: "Intervention", value: city.responseTime || "30-45 min" },
+      { label: "Disponibilité", value: city.availability || "24/7" },
+      { label: "Avant validation", value: city.quoteLabel || "Devis gratuit" },
+    ];
+
+  const expressCard = {
+    small: city.expressCard?.small || "Demande express",
+    title: city.expressCard?.title || `${city.serviceName} ${city.name}`,
+    placeholders: {
+      address:
+        city.expressCard?.placeholders?.address || "Adresse ou code postal",
+      need: city.expressCard?.placeholders?.need || "Votre besoin",
+      phone: city.expressCard?.placeholders?.phone || "Votre numéro",
+    },
+    cta: city.expressCard?.cta || "Être rappelé rapidement",
+    reassuranceItems: city.expressCard?.reassuranceItems || [
+      "Intervention rapide annoncée",
+      "Tarifs expliqués avant validation",
+      "Disponibilité 24h/24 et 7j/7",
+      "Paiement après intervention",
+    ],
+  };
+
+  const prestationsSection = {
+    badge: city.prestationsSection?.badge || "Prestations",
+    title:
+      city.prestationsSection?.title ||
+      `Interventions les plus demandées à ${city.name}`,
+    intro:
+      city.prestationsSection?.intro ||
+      `Les interventions les plus fréquentes de ${serviceNameLower} à ${city.name} (${city.postalCode}) concernent les demandes courantes, les urgences, les remplacements d’équipements et les mises en sécurité selon les besoins sur place.`,
+    cta: city.prestationsSection?.cta || "Réserver cette intervention",
+  };
+
+  const zoneSection = {
+    badge: city.zoneSection?.badge || "Zone couverte",
+    title:
+      city.zoneSection?.title ||
+      `${city.serviceName} à ${city.name} et communes autour du ${city.postalCode}`,
+    intro:
+      city.zoneSection?.intro ||
+      `Notre ${serviceNameLower} intervient à ${city.name} (${city.postalCode}) ainsi que dans les secteurs proches. Les déplacements couvrent notamment ${
+        city.localAreas?.join(", ") || city.name
+      }.`,
+  };
+
+  const featuresSection = {
+    title:
+      city.featuresSection?.title ||
+      `Pourquoi faire appel à un ${serviceNameLower} à ${city.name} ?`,
+    items: city.featuresSection?.items || [
+      `Intervention rapide à ${city.name}`,
+      `Déplacement dans ${city.name} et ses alentours`,
+      `Disponibilité étendue dans le ${city.departmentCode}`,
+      "Tarifs expliqués avant validation",
+      "Prise en charge des demandes urgentes",
+      "Intervention adaptée à votre situation",
+    ],
+  };
+
+  const jobsSection = {
+    title: city.jobsSection?.title || "Dernières demandes dans le secteur",
+    items: city.jobsSection?.items || city.currentJobs || [],
+    boxTitle: city.jobsSection?.boxTitle || "Tarifs annoncés à l'avance",
+    boxText: city.jobsSection?.boxText || "Pas de surprise avant validation",
+  };
+
+  const seoSection = {
+    badge: city.seoSection?.badge || city.seoBadge || "Informations locales",
+    title:
+      city.seoSection?.title ||
+      city.seoSectionTitle ||
+      `Informations utiles sur ${serviceNameLower} à ${city.name}`,
+    intro:
+      city.seoSection?.intro ||
+      city.seoSectionIntro ||
+      `Retrouvez les informations utiles concernant les interventions de ${serviceNameLower} à ${city.name}, les demandes fréquentes et les zones couvertes.`,
+  };
+
+  const departmentSection = {
+    title:
+      city.departmentSection?.title ||
+      `Communes d’intervention dans le ${city.departmentCode}`,
+    text:
+      city.departmentSection?.text ||
+      `Notre ${serviceNameLower} intervient à ${city.name} (${city.postalCode}) ainsi que dans d’autres communes du ${city.department}. Retrouvez ci-dessous les autres pages locales disponibles dans le département.`,
+  };
+
+  const mapsPlaceUrl = city.mapsPlaceUrl || city.mapsUrl;
+  const mapsEmbedUrl = city.mapsEmbedUrl || city.mapsUrl;
+
   return (
     <>
       <section className="city-hero">
         <div className="blob blob-left"></div>
         <div className="blob blob-right"></div>
+
         <div className="container city-grid">
           <div>
             <div className="breadcrumb">
-              <span>Accueil</span><ChevronRight size={15} />
-              <span>{city.serviceName.toLowerCase()}</span><ChevronRight size={15} />
-              <span>{city.departmentCode}</span><ChevronRight size={15} />
+              <span>Accueil</span>
+              <ChevronRight size={15} />
+              <span>{serviceNameLower}</span>
+              <ChevronRight size={15} />
+              <span>{city.departmentCode}</span>
+              <ChevronRight size={15} />
               <strong>{city.name}</strong>
             </div>
-            <span className="badge badge-soft-orange">Entreprise locale • {city.departmentCode} • {city.postalCode}</span>
+
+            <span className="badge badge-soft-orange">
+              {heroBadge} • {city.departmentCode} • {city.postalCode}
+            </span>
+
             <h1 className="city-title">{city.seoTitle}</h1>
             <p className="city-text">{city.heroIntro}</p>
+
             <div className="city-actions">
-              <a className="btn btn-dark" href={`tel:${city.phone.replace(/\s+/g, '')}`}><Phone size={18} /> {city.phone}</a>
-              <a className="btn btn-outline" href={city.mapsUrl} target="_blank" rel="noreferrer">Voir la fiche Maps <ExternalLink size={18} /></a>
+              <a className="btn btn-dark" href={telHref}>
+                <Phone size={18} /> {city.phone}
+              </a>
+
+              {mapsPlaceUrl && (
+                <a
+                  className="btn btn-outline"
+                  href={mapsPlaceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Voir la fiche Maps <ExternalLink size={18} />
+                </a>
+              )}
             </div>
+
             <div className="city-mini-stats">
-              <div className="city-mini-stat"><span>Intervention</span><strong>30-45 min</strong></div>
-              <div className="city-mini-stat"><span>Disponibilité</span><strong>24/7</strong></div>
-              <div className="city-mini-stat"><span>Avant validation</span><strong>Devis gratuit</strong></div>
+              {miniStats.map((stat, index) => (
+                <div className="city-mini-stat" key={`${stat.label}-${index}`}>
+                  <span>{stat.label}</span>
+                  <strong>{stat.value}</strong>
+                </div>
+              ))}
             </div>
           </div>
 
           <aside className="side-card">
             <div className="body">
-              <small>Demande express</small>
-              <h3>{city.serviceName} {city.name}</h3>
-              <div className="field" style={{ marginTop: 18 }}><input className="input" placeholder="Adresse ou code postal" /></div>
-              <div className="field" style={{ marginTop: 12 }}><input className="input" placeholder="Votre besoin" /></div>
-              <div className="field" style={{ marginTop: 12 }}><input className="input" placeholder="Votre numéro" /></div>
-              <div style={{ marginTop: 14 }}><button className="btn btn-primary" style={{ width: '100%' }}>Être rappelé rapidement</button></div>
-              <div className="check-grid" style={{ gridTemplateColumns: '1fr', marginTop: 16 }}>
-                <div className="check-item"><CheckCircle2 size={16} /> Intervention rapide annoncée</div>
-                <div className="check-item"><CheckCircle2 size={16} /> Tarifs expliqués avant validation</div>
-                <div className="check-item"><CheckCircle2 size={16} /> Disponibilité 24h/24 et 7j/7</div>
-                <div className="check-item"><CheckCircle2 size={16} /> Paiement après intervention</div>
+              <small>{expressCard.small}</small>
+              <h3>{expressCard.title}</h3>
+
+              <div className="field" style={{ marginTop: 18 }}>
+                <input
+                  className="input"
+                  placeholder={expressCard.placeholders.address}
+                />
+              </div>
+
+              <div className="field" style={{ marginTop: 12 }}>
+                <input
+                  className="input"
+                  placeholder={expressCard.placeholders.need}
+                />
+              </div>
+
+              <div className="field" style={{ marginTop: 12 }}>
+                <input
+                  className="input"
+                  placeholder={expressCard.placeholders.phone}
+                />
+              </div>
+
+              <div style={{ marginTop: 14 }}>
+                <button className="btn btn-primary" style={{ width: "100%" }}>
+                  {expressCard.cta}
+                </button>
+              </div>
+
+              <div
+                className="check-grid"
+                style={{ gridTemplateColumns: "1fr", marginTop: 16 }}
+              >
+                {expressCard.reassuranceItems.map((item) => (
+                  <div className="check-item" key={item}>
+                    <CheckCircle2 size={16} /> {item}
+                  </div>
+                ))}
               </div>
             </div>
           </aside>
@@ -436,13 +598,13 @@ function CityPage() {
       <section className="section">
         <div className="container">
           <div className="section-head">
-            <span className="badge badge-white">Prestations</span>
-            <h2>Interventions les plus demandées à {city.name}</h2>
-            <p>
-              Les interventions de serrurerie les plus fréquentes à {city.name} ({city.postalCode}) concernent l’ouverture de porte claquée, le changement de serrure, le remplacement de cylindre et la mise en sécurité après effraction. Ces dépannages permettent de résoudre rapidement les problèmes de porte bloquée, clé cassée dans la serrure ou perte de clés.
-            </p>          </div>
+            <span className="badge badge-white">{prestationsSection.badge}</span>
+            <h2>{prestationsSection.title}</h2>
+            <p>{prestationsSection.intro}</p>
+          </div>
+
           <div className="prestation-grid">
-            {city.prestations.map((item) => (
+            {(city.prestations || []).map((item) => (
               <div className="prestation-card" key={item.title}>
                 <div className="prestation-head">
                   <div>
@@ -451,8 +613,14 @@ function CityPage() {
                   </div>
                   <span className="price-pill">{item.price}</span>
                 </div>
+
                 <p>{item.desc}</p>
-                <div style={{ marginTop: 18 }}><button className="btn btn-outline">Réserver cette intervention</button></div>
+
+                <div style={{ marginTop: 18 }}>
+                  <button className="btn btn-outline">
+                    {item.cta || prestationsSection.cta}
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -460,39 +628,47 @@ function CityPage() {
       </section>
 
       <section className="section local-section">
-        <div className="container" style={{ display: 'grid', gap: 30, gridTemplateColumns: '1fr 420px' }}>
+        <div
+          className="container"
+          style={{ display: "grid", gap: 30, gridTemplateColumns: "1fr 420px" }}
+        >
           <div>
             <div className="section-head">
-              <span className="badge badge-white">Zone couverte</span>
-              <h2>Serrurier à {city.name} et communes autour du {city.postalCode}</h2>
-              <p>
-                Notre serrurier se déplace à {city.name} ({city.postalCode}) et dans les communes proches pour les dépannages de serrurerie : ouverture de porte claquée, remplacement de serrure, changement de cylindre ou mise en sécurité après effraction. Les interventions couvrent notamment les secteurs de {city.localAreas.join(', ')}.
-              </p>            </div>
-            <div className="pills-wrap">
-              {city.localAreas.map((area) => (
-                <span className="area-pill" key={area}><MapPin size={15} /> {area}</span>
-              ))}
+              <span className="badge badge-white">{zoneSection.badge}</span>
+              <h2>{zoneSection.title}</h2>
+              <p>{zoneSection.intro}</p>
             </div>
-            <div className="map-box">
-              <iframe
-                src={city.mapsUrl}
-                loading="lazy"
-                title={`Carte ${city.name}`}
-                referrerPolicy="no-referrer-when-downgrade"
-                allowFullScreen
-              ></iframe>
-            </div>
+
+            {!!city.localAreas?.length && (
+              <div className="pills-wrap">
+                {city.localAreas.map((area) => (
+                  <span className="area-pill" key={area}>
+                    <MapPin size={15} /> {area}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {mapsEmbedUrl && (
+              <div className="map-box">
+                <iframe
+                  src={mapsEmbedUrl}
+                  loading="lazy"
+                  title={`Carte ${city.name}`}
+                  referrerPolicy="no-referrer-when-downgrade"
+                  allowFullScreen
+                ></iframe>
+              </div>
+            )}
+
             <div className="feature-box">
-              <h3>Pourquoi faire appel à un serrurier à {city.name} ?</h3>
+              <h3>{featuresSection.title}</h3>
               <div className="feature-grid">
-                {[
-                  `Intervention rapide de serrurier à ${city.name}`,
-                  `Ouverture de porte claquée sans casse`,
-                  `Changement de serrure et remplacement de cylindre`,
-                  `Dépannage serrurerie 24h/24 dans le ${city.departmentCode}`,
-                  `Mise en sécurité après effraction`,
-                  `Devis annoncé avant toute intervention`
-                ].map((item) => (<div className="feature-item" key={item}><CheckCircle2 size={18} color="#ea580c" /><span>{item}</span></div>
+                {featuresSection.items.map((item) => (
+                  <div className="feature-item" key={item}>
+                    <CheckCircle2 size={18} color="#ea580c" />
+                    <span>{item}</span>
+                  </div>
                 ))}
               </div>
             </div>
@@ -500,74 +676,113 @@ function CityPage() {
 
           <div className="side-card">
             <div className="body">
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Clock3 size={18} color="#ea580c" /><h3 style={{ fontSize: 24 }}>Dernières demandes dans le secteur</h3></div>
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <Clock3 size={18} color="#ea580c" />
+                <h3 style={{ fontSize: 24 }}>{jobsSection.title}</h3>
+              </div>
+
               <div className="job-list">
-                {city.currentJobs.map((job) => (
-                  <div className="job-item" key={job}><p>{job}</p></div>
+                {jobsSection.items.map((job) => (
+                  <div className="job-item" key={job}>
+                    <p>{job}</p>
+                  </div>
                 ))}
               </div>
-              <div className="price-box"><strong>Tarifs annoncés à l'avance</strong><span> Pas de surprise avant validation</span></div>
+
+              <div className="price-box">
+                <strong>{jobsSection.boxTitle}</strong>
+                <span> {jobsSection.boxText}</span>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
+      {trustSection && (
+        <section className="section trust-section">
+          <div className="container">
+            <div className="section-head">
+              <span className="badge badge-white">Confiance</span>
+              <h2>{trustSection.title}</h2>
+            </div>
+
+            <div className="feature-grid">
+              {trustSection.items.map((item, index) => (
+                <div className="feature-item" key={index}>
+                  <CheckCircle2 size={18} color="#ea580c" />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="section">
-        <div className="container" style={{ display: 'grid', gap: 30, gridTemplateColumns: '1fr 1fr' }}>
+        <div
+          className="container"
+          style={{ display: "grid", gap: 30, gridTemplateColumns: "1fr 1fr" }}
+        >
           <div>
             <div className="section-head">
-              <span className="badge badge-white">{city.seoBadge || 'Informations locales'}</span>
-              <h2>{city.seoSectionTitle || `Informations utiles sur ${city.serviceName.toLowerCase()} à ${city.name}`}</h2>
-              <p>
-                {city.seoSectionIntro ||
-                  `Retrouvez les informations utiles concernant les interventions de ${city.serviceName.toLowerCase()} à ${city.name}, les situations fréquentes et les zones couvertes.`}
-              </p>
+              <span className="badge badge-white">{seoSection.badge}</span>
+              <h2>{seoSection.title}</h2>
+              <p>{seoSection.intro}</p>
             </div>
 
             <div className="seo-copy" style={{ marginTop: 24 }}>
-              {city.seoParagraphs.map((paragraph, i) => (
+              {(city.seoParagraphs || []).map((paragraph, i) => (
                 <p key={i}>{paragraph}</p>
               ))}
             </div>
           </div>
 
           <div className="final-cta">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <Building2 size={22} color="#fdba74" />
-              <h3>Communes d’intervention dans le {city.departmentCode}</h3>
+              <h3>{departmentSection.title}</h3>
             </div>
 
-            <p>
-              Notre serrurier intervient à {city.name} ({city.postalCode}) ainsi que dans
-              d’autres communes du {city.department}. Retrouvez ci-dessous les pages
-              locales disponibles dans le département pour les ouvertures de porte,
-              changements de serrure et dépannages serrurerie.
-            </p>
+            <p>{departmentSection.text}</p>
 
             <div className="intervention-links">
-              {cities
-                .filter(
-                  (item) =>
-                    item.departmentCode === city.departmentCode &&
-                    item.serviceSlug === city.serviceSlug &&
-                    item.slug !== city.slug
-                )
-                .map((item) => (
-                  <a
-                    key={item.slug}
-                    className="intervention-link"
-                    href={`/${item.serviceSlug}/${item.departmentCode}/${item.slug}`}
-                  >
-                    {item.serviceName} à {item.name} ({item.postalCode})
-                  </a>
-                ))}
+              {siblingCities.map((item) => (
+                <a
+                  key={item.slug}
+                  className="intervention-link"
+                  href={`/${item.serviceSlug}/${item.departmentCode}/${item.slug}`}
+                >
+                  {item.serviceName} à {item.name} ({item.postalCode})
+                </a>
+              ))}
             </div>
           </div>
         </div>
-      </section >
+      </section>
+
+      {faqSection && (
+        <section className="section faq-section">
+          <div className="container">
+            <div className="section-head">
+              <span className="badge badge-white">FAQ</span>
+              <h2>{faqSection.title}</h2>
+            </div>
+
+            <div className="faq-list">
+              {faqSection.items.map((faq, index) => (
+                <details key={index} className="faq-item">
+                  <summary>{faq.q}</summary>
+                  <p>{faq.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </>
   );
 }
+
 
 function Footer() {
   return (
