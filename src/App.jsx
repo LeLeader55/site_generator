@@ -24,6 +24,8 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { cities, getCity } from './data/cities';
+import SchemaOrg from "./components/SchemaOrg";
+import SeoHelmet from "./components/SeoHelmet";
 
 const services = [
   { title: 'Serrurier', delay: 'Sous 30 à 45 min', desc: 'Ouverture de porte, changement de serrure, mise en sécurité après effraction.', icon: Lock },
@@ -48,6 +50,10 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/:serviceSlug/:departmentCode/:citySlug" element={<CityPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
+        <Route
+          path="/:serviceSlug/:departmentCode"
+          element={<DepartmentPage />}
+        />
       </Routes>
       <Footer />
       <a className="floating-call hide-desktop" href="tel:0232002727">
@@ -90,6 +96,11 @@ function Header() {
 function HomePage() {
   return (
     <>
+      <SeoHelmet
+        title="Dépannage à domicile en France : serrurier, plombier, électricien"
+        description="Dépannage à domicile partout en France : serrurier, plomberie, électricité, chauffage, volets et petits travaux."
+        canonical="https://ton-domaine.fr/"
+      />
       <section className="hero-home">
         <div className="blob blob-left"></div>
         <div className="blob blob-right"></div>
@@ -446,8 +457,7 @@ function CityPage() {
       `${city.serviceName} à ${city.name} et communes autour du ${city.postalCode}`,
     intro:
       city.zoneSection?.intro ||
-      `Notre ${serviceNameLower} intervient à ${city.name} (${city.postalCode}) ainsi que dans les secteurs proches. Les déplacements couvrent notamment ${
-        city.localAreas?.join(", ") || city.name
+      `Notre ${serviceNameLower} intervient à ${city.name} (${city.postalCode}) ainsi que dans les secteurs proches. Les déplacements couvrent notamment ${city.localAreas?.join(", ") || city.name
       }.`,
   };
 
@@ -498,6 +508,12 @@ function CityPage() {
 
   return (
     <>
+      <SeoHelmet
+        title={city.seoTitle}
+        description={city.metaDescription}
+        canonical={`https://ton-domaine.fr/${serviceSlug}/${departmentCode}/${citySlug}`}
+      />
+      <SchemaOrg cityData={city} serviceSlug={serviceSlug} domain="https://ton-domaine.fr" />
       <section className="city-hero">
         <div className="blob blob-left"></div>
         <div className="blob blob-right"></div>
@@ -782,7 +798,537 @@ function CityPage() {
     </>
   );
 }
+function DepartmentPage() {
+  const { serviceSlug, departmentCode } = useParams();
 
+  const departmentCities = cities.filter(
+    (item) =>
+      item.serviceSlug === serviceSlug &&
+      item.departmentCode === departmentCode
+  );
+
+  if (!departmentCities.length) return <Navigate to="/" replace />;
+
+  const firstCity = departmentCities[0];
+  const serviceName = firstCity.serviceName || serviceSlug;
+  const serviceNameLower = serviceName?.toLowerCase?.() || "service";
+  const departmentName = firstCity.department || departmentCode;
+  const telHref = `tel:${(firstCity.phone || "").replace(/\s+/g, "")}`;
+
+  const departmentData =
+    typeof getDepartment === "function"
+      ? getDepartment(serviceSlug, departmentCode)
+      : null;
+
+  const heroBadge =
+    departmentData?.heroBadge || "Intervention départementale";
+
+  const heroTitle =
+    departmentData?.heroTitle ||
+    `${serviceName} dans le département ${departmentName} (${departmentCode})`;
+
+  const heroIntro =
+    departmentData?.heroIntro ||
+    `Notre service de ${serviceNameLower} intervient dans les principales villes du département ${departmentName} (${departmentCode}) pour les demandes courantes, urgences et interventions sur rendez-vous selon disponibilité.`;
+
+  const miniStats =
+    departmentData?.miniStats || [
+      { label: "Couverture", value: `Département ${departmentCode}` },
+      { label: "Disponibilité", value: firstCity.availability || "24/7" },
+      { label: "Avant validation", value: firstCity.quoteLabel || "Devis annoncé" },
+    ];
+
+  const expressCard = {
+    small: departmentData?.expressCard?.small || "Demande départementale",
+    title:
+      departmentData?.expressCard?.title ||
+      `${serviceName} dans le ${departmentName}`,
+    placeholders: {
+      address:
+        departmentData?.expressCard?.placeholders?.address ||
+        "Ville ou adresse de l’intervention",
+      need:
+        departmentData?.expressCard?.placeholders?.need ||
+        `Ex : besoin en ${serviceNameLower}`,
+      phone:
+        departmentData?.expressCard?.placeholders?.phone || "Votre numéro",
+    },
+    cta:
+      departmentData?.expressCard?.cta || "Être rappelé rapidement",
+    reassuranceItems:
+      departmentData?.expressCard?.reassuranceItems || [
+        `Intervention dans les villes du ${departmentName}`,
+        "Tarifs expliqués avant validation",
+        "Prise en charge des urgences selon disponibilité",
+        "Paiement après intervention",
+      ],
+  };
+
+  const citiesSection = {
+    badge: departmentData?.citiesSection?.badge || "Villes couvertes",
+    title:
+      departmentData?.citiesSection?.title ||
+      `${serviceName} dans les principales villes du ${departmentName}`,
+    intro:
+      departmentData?.citiesSection?.intro ||
+      `Consultez ci-dessous les pages locales disponibles pour les principales communes du département ${departmentName}.`,
+  };
+
+  const prestationsSection = {
+    badge: departmentData?.prestationsSection?.badge || "Prestations",
+    title:
+      departmentData?.prestationsSection?.title ||
+      `Interventions ${serviceNameLower} les plus demandées dans le ${departmentName}`,
+    intro:
+      departmentData?.prestationsSection?.intro ||
+      `Les demandes les plus fréquentes concernent les dépannages urgents, les remplacements d’équipements, les mises en sécurité et les interventions planifiées selon la situation sur place.`,
+    cta:
+      departmentData?.prestationsSection?.cta || "Demander cette intervention",
+  };
+
+  const prestations =
+    departmentData?.prestations || [
+      {
+        title: `Dépannage ${serviceNameLower}`,
+        delay: "Selon disponibilité",
+        price: "Devis",
+        desc: `Intervention sur les demandes courantes de ${serviceNameLower} dans les principales villes du ${departmentName}.`,
+      },
+      {
+        title: "Urgence et mise en sécurité",
+        delay: "Rapide",
+        price: "Avant validation",
+        desc: "Prise en charge des situations urgentes et sécurisation selon le contexte rencontré sur place.",
+      },
+      {
+        title: "Remplacement et réparation",
+        delay: "Sur place",
+        price: "Tarif annoncé",
+        desc: "Réparation, remplacement ou remise en état selon le matériel et la nature de l’intervention.",
+      },
+    ];
+
+  const zoneSection = {
+    badge: departmentData?.zoneSection?.badge || "Zone couverte",
+    title:
+      departmentData?.zoneSection?.title ||
+      `${serviceName} dans le ${departmentName} (${departmentCode})`,
+    intro:
+      departmentData?.zoneSection?.intro ||
+      `Notre service couvre plusieurs communes du département ${departmentName}, avec des interventions organisées selon les besoins et les disponibilités locales.`,
+  };
+
+  const featuresSection = {
+    title:
+      departmentData?.featuresSection?.title ||
+      `Pourquoi faire appel à un ${serviceNameLower} dans le ${departmentName} ?`,
+    items:
+      departmentData?.featuresSection?.items || [
+        `Intervention dans plusieurs villes du ${departmentName}`,
+        `Déplacement organisé sur le secteur ${departmentCode}`,
+        "Prise en charge des urgences selon disponibilité",
+        "Tarifs expliqués avant validation",
+        "Service local lisible et rassurant",
+        "Pages locales dédiées par commune",
+      ],
+  };
+
+  const jobsSection = {
+    title:
+      departmentData?.jobsSection?.title ||
+      `Demandes fréquentes dans le ${departmentName}`,
+    items:
+      departmentData?.jobsSection?.items || [
+        `Demande urgente de ${serviceNameLower} sur une commune du ${departmentName}`,
+        `Intervention planifiée dans le secteur ${departmentCode}`,
+        "Besoin de diagnostic avant travaux",
+        "Demande de rappel pour une intervention locale",
+      ],
+    boxTitle:
+      departmentData?.jobsSection?.boxTitle || "Avant intervention",
+    boxText:
+      departmentData?.jobsSection?.boxText || "Explications et validation avant déplacement",
+  };
+
+  const trustSection = departmentData?.trustSection || {
+    title: `Pourquoi choisir notre service dans le ${departmentName} ?`,
+    items: [
+      `Couverture de plusieurs villes du ${departmentName}`,
+      "Intervention rapide selon disponibilité",
+      "Tarif communiqué avant validation",
+      "Approche claire et rassurante",
+    ],
+  };
+
+  const seoSection = {
+    badge:
+      departmentData?.seoSection?.badge || "Informations départementales",
+    title:
+      departmentData?.seoSection?.title ||
+      `Informations utiles sur ${serviceNameLower} dans le ${departmentName}`,
+    intro:
+      departmentData?.seoSection?.intro ||
+      `Retrouvez ici les informations utiles concernant les interventions de ${serviceNameLower} dans le département ${departmentName}, les zones couvertes et les demandes les plus courantes.`,
+  };
+
+  const seoParagraphs =
+    departmentData?.seoParagraphs || [
+      `Faire appel à un ${serviceNameLower} dans le département ${departmentName} permet d’obtenir une prise en charge plus simple sur les principales communes et leurs alentours.`,
+      `Cette page regroupe les pages locales disponibles dans le ${departmentName} afin de vous orienter plus facilement vers la commune concernée par votre demande.`,
+      `Selon le type d’intervention, le contexte sur place et la disponibilité, notre service peut intervenir sur une large partie du département ${departmentName}.`,
+    ];
+
+  const internalSection = {
+    title:
+      departmentData?.internalSection?.title ||
+      `Pages locales de ${serviceNameLower} dans le ${departmentName}`,
+    text:
+      departmentData?.internalSection?.text ||
+      `Retrouvez ci-dessous les principales pages locales disponibles pour le département ${departmentName}. Chaque page regroupe des informations ciblées sur la commune concernée.`,
+  };
+
+  const faqSection = departmentData?.faqSection || {
+    title: `Questions fréquentes sur nos interventions dans le ${departmentName}`,
+    items: [
+      {
+        q: `Intervenez-vous dans tout le département ${departmentName} ?`,
+        a: `Nous couvrons les principales communes du département ${departmentName} ainsi que les secteurs proches selon disponibilité.`,
+      },
+      {
+        q: `Puis-je accéder à une page dédiée à ma ville ?`,
+        a: "Oui, vous pouvez consulter la liste des communes couvertes et ouvrir la page locale correspondante.",
+      },
+      {
+        q: "Comment demander une intervention ?",
+        a: "Vous pouvez appeler directement ou utiliser le formulaire de demande de rappel affiché sur la page.",
+      },
+    ],
+  };
+
+  const mapsPlaceUrl = departmentData?.mapsPlaceUrl || firstCity.mapsPlaceUrl || firstCity.mapsUrl;
+
+  return (
+    <>
+      <SeoHelmet
+        title={
+          departmentData?.seoTitle ||
+          `${serviceName} dans le ${departmentName} (${departmentCode})`
+        }
+        description={
+          departmentData?.metaDescription ||
+          `Besoin d’un ${serviceNameLower} dans le ${departmentName} (${departmentCode}) ? Intervention dans les principales villes du département pour les demandes courantes et urgentes.`
+        }
+        canonical={`https://ton-domaine.fr/${serviceSlug}/${departmentCode}`}
+      />
+
+      <section className="city-hero">
+        <div className="blob blob-left"></div>
+        <div className="blob blob-right"></div>
+
+        <div className="container city-grid">
+          <div>
+            <div className="breadcrumb">
+              <span>Accueil</span>
+              <ChevronRight size={15} />
+              <span>{serviceNameLower}</span>
+              <ChevronRight size={15} />
+              <strong>{departmentCode}</strong>
+            </div>
+
+            <span className="badge badge-soft-orange">
+              {heroBadge} • {departmentCode} • {departmentName}
+            </span>
+
+            <h1 className="city-title">{heroTitle}</h1>
+            <p className="city-text">{heroIntro}</p>
+
+            <div className="city-actions">
+              <a className="btn btn-dark" href={telHref}>
+                <Phone size={18} /> {firstCity.phone}
+              </a>
+
+              {mapsPlaceUrl && (
+                <a
+                  className="btn btn-outline"
+                  href={mapsPlaceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Voir la fiche Maps <ExternalLink size={18} />
+                </a>
+              )}
+            </div>
+
+            <div className="city-mini-stats">
+              {miniStats.map((stat, index) => (
+                <div className="city-mini-stat" key={`${stat.label}-${index}`}>
+                  <span>{stat.label}</span>
+                  <strong>{stat.value}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <aside className="side-card">
+            <div className="body">
+              <small>{expressCard.small}</small>
+              <h3>{expressCard.title}</h3>
+
+              <div className="field" style={{ marginTop: 18 }}>
+                <input
+                  className="input"
+                  placeholder={expressCard.placeholders.address}
+                />
+              </div>
+
+              <div className="field" style={{ marginTop: 12 }}>
+                <input
+                  className="input"
+                  placeholder={expressCard.placeholders.need}
+                />
+              </div>
+
+              <div className="field" style={{ marginTop: 12 }}>
+                <input
+                  className="input"
+                  placeholder={expressCard.placeholders.phone}
+                />
+              </div>
+
+              <div style={{ marginTop: 14 }}>
+                <button className="btn btn-primary" style={{ width: "100%" }}>
+                  {expressCard.cta}
+                </button>
+              </div>
+
+              <div
+                className="check-grid"
+                style={{ gridTemplateColumns: "1fr", marginTop: 16 }}
+              >
+                {expressCard.reassuranceItems.map((item) => (
+                  <div className="check-item" key={item}>
+                    <CheckCircle2 size={16} /> {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="container">
+          <div className="section-head">
+            <span className="badge badge-white">{citiesSection.badge}</span>
+            <h2>{citiesSection.title}</h2>
+            <p>{citiesSection.intro}</p>
+          </div>
+
+          <div className="prestation-grid">
+            {departmentCities.map((city) => (
+              <div className="prestation-card" key={city.slug}>
+                <div className="prestation-head">
+                  <div>
+                    <h3>
+                      {serviceName} à {city.name}
+                    </h3>
+                    <small>{city.postalCode}</small>
+                  </div>
+                  <span className="price-pill">{city.departmentCode}</span>
+                </div>
+
+                <p>
+                  Intervention locale à {city.name} et dans les communes voisines
+                  du secteur {city.postalCode}.
+                </p>
+
+                <div style={{ marginTop: 18 }}>
+                  <Link
+                    className="btn btn-outline"
+                    to={`/${city.serviceSlug}/${city.departmentCode}/${city.slug}`}
+                  >
+                    Voir la page
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="container">
+          <div className="section-head">
+            <span className="badge badge-white">{prestationsSection.badge}</span>
+            <h2>{prestationsSection.title}</h2>
+            <p>{prestationsSection.intro}</p>
+          </div>
+
+          <div className="prestation-grid">
+            {prestations.map((item) => (
+              <div className="prestation-card" key={item.title}>
+                <div className="prestation-head">
+                  <div>
+                    <h3>{item.title}</h3>
+                    <small>{item.delay}</small>
+                  </div>
+                  <span className="price-pill">{item.price}</span>
+                </div>
+
+                <p>{item.desc}</p>
+
+                <div style={{ marginTop: 18 }}>
+                  <button className="btn btn-outline">
+                    {item.cta || prestationsSection.cta}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section local-section">
+        <div
+          className="container"
+          style={{ display: "grid", gap: 30, gridTemplateColumns: "1fr 420px" }}
+        >
+          <div>
+            <div className="section-head">
+              <span className="badge badge-white">{zoneSection.badge}</span>
+              <h2>{zoneSection.title}</h2>
+              <p>{zoneSection.intro}</p>
+            </div>
+
+            <div className="pills-wrap">
+              {departmentCities.map((city) => (
+                <span className="area-pill" key={city.slug}>
+                  <MapPin size={15} /> {city.name}
+                </span>
+              ))}
+            </div>
+
+            <div className="feature-box">
+              <h3>{featuresSection.title}</h3>
+              <div className="feature-grid">
+                {featuresSection.items.map((item) => (
+                  <div className="feature-item" key={item}>
+                    <CheckCircle2 size={18} color="#ea580c" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="side-card">
+            <div className="body">
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <Clock3 size={18} color="#ea580c" />
+                <h3 style={{ fontSize: 24 }}>{jobsSection.title}</h3>
+              </div>
+
+              <div className="job-list">
+                {jobsSection.items.map((job) => (
+                  <div className="job-item" key={job}>
+                    <p>{job}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="price-box">
+                <strong>{jobsSection.boxTitle}</strong>
+                <span> {jobsSection.boxText}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {trustSection && (
+        <section className="section trust-section">
+          <div className="container">
+            <div className="section-head">
+              <span className="badge badge-white">Confiance</span>
+              <h2>{trustSection.title}</h2>
+            </div>
+
+            <div className="feature-grid">
+              {trustSection.items.map((item, index) => (
+                <div className="feature-item" key={index}>
+                  <CheckCircle2 size={18} color="#ea580c" />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section className="section">
+        <div
+          className="container"
+          style={{ display: "grid", gap: 30, gridTemplateColumns: "1fr 1fr" }}
+        >
+          <div>
+            <div className="section-head">
+              <span className="badge badge-white">{seoSection.badge}</span>
+              <h2>{seoSection.title}</h2>
+              <p>{seoSection.intro}</p>
+            </div>
+
+            <div className="seo-copy" style={{ marginTop: 24 }}>
+              {seoParagraphs.map((paragraph, i) => (
+                <p key={i}>{paragraph}</p>
+              ))}
+            </div>
+          </div>
+
+          <div className="final-cta">
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Building2 size={22} color="#fdba74" />
+              <h3>{internalSection.title}</h3>
+            </div>
+
+            <p>{internalSection.text}</p>
+
+            <div className="intervention-links">
+              {departmentCities.map((item) => (
+                <Link
+                  key={item.slug}
+                  className="intervention-link"
+                  to={`/${item.serviceSlug}/${item.departmentCode}/${item.slug}`}
+                >
+                  {item.serviceName} à {item.name} ({item.postalCode})
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {faqSection && (
+        <section className="section faq-section">
+          <div className="container">
+            <div className="section-head">
+              <span className="badge badge-white">FAQ</span>
+              <h2>{faqSection.title}</h2>
+            </div>
+
+            <div className="faq-list">
+              {faqSection.items.map((faq, index) => (
+                <details key={index} className="faq-item">
+                  <summary>{faq.q}</summary>
+                  <p>{faq.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+    </>
+  );
+}
 
 function Footer() {
   return (
